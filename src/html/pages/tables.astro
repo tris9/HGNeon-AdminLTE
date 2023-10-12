@@ -1,0 +1,287 @@
+---
+import Head from "@components/_head.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/_sidenav.astro";
+import Scripts from "@components/_scripts.astro";
+
+const title = "HGNeon | Tables";
+const path = "../../../dist";
+const mainPage = "tables";
+const page = "simple";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <!--begin::App Wrapper-->
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <!--begin::App Main-->
+      <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+          <!--begin::Container-->
+          <div class="container-fluid">
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-sm-6">
+                <h3 class="mb-0">Tables</h3>
+              </div>
+              <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-end">
+                  <li class="breadcrumb-item"><a href="#">Home</a></li>
+                  <li class="breadcrumb-item active" aria-current="page">
+                    Tables
+                  </li>
+                </ol>
+              </div>
+            </div>
+            <!--end::Row-->
+          </div>
+          <!--end::Container-->
+        </div>
+        <!--end::App Content Header-->
+        <!--begin::App Content-->
+        <div class="app-content">
+          <!--begin::Container-->
+          <div class="container-fluid">
+            <div class="col">
+              <select
+              class="form-select"
+              name="tenant-id" id="tenant-id">
+              <option selected disabled value="">Select a Tenant...</option>
+              </select>
+              <select
+              class="form-select"
+              name="timeline-id" id="timeline-id">
+              <option selected disabled value="">Select a Timeline...</option>
+              </select>
+              <select
+              class="form-select"
+              name="db-name" id="db-name">
+              <option selected disabled value="">Select a Database...</option>
+              </select>
+              <select
+              class="form-select"
+              name="tbl-name" id="tbl-name">
+              <option selected disabled value="">Select a Table...</option>
+              </select>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-primary bi bi-arrow-clockwise" id="refresh-btn" style="margin:5px"
+                      > Refresh</button>
+                </div>
+              <br></br>
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-md-12">
+                <div class="card mb-4">
+                  <div class="card-header">
+
+                    <div class="row">
+                    <div class="col">
+                    <h3 class="card-title">Table For Selection</h3>
+                    </div>
+                  </div>     
+                  </div>
+                  <!-- /.card-header -->
+                  <div class="card-body p-0">
+                    <table class="table table-bordered" style="table-layout:fixed;">
+                      <thead id="table-head">
+                      </thead>
+                      <tbody id="table-body">
+                      </tbody>
+                    </table>
+                  </div>
+                  <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
+              </div>
+              <!-- /.col -->
+            </div>
+            <!--end::Row-->
+          </div>
+          <!--end::Container-->
+        </div>
+        <!--end::App Content-->
+      </main>
+      <!--end::App Main-->
+      <Footer />
+    </div>
+    <!--end::App Wrapper-->
+    <!--begin::Script-->
+    <Scripts path={path} />
+
+    <script>
+      const url = "http://192.168.49.2:30088/";
+
+      document.getElementById("refresh-btn").addEventListener("click", refreshSel, false);
+
+      let tenant_sel = document.getElementById("tenant-id");
+      let timeline_sel = document.getElementById("timeline-id");
+      let db_sel = document.getElementById("db-name");
+      let tbl_sel = document.getElementById("tbl-name");
+
+      let table_head = document.getElementById("table-head");
+      let table_body = document.getElementById("table-body");
+
+      tenant_sel.addEventListener('change', updateTimelines);
+      timeline_sel.addEventListener('change', updateDatabases);
+      db_sel.addEventListener('change', updateTables);
+      tbl_sel.addEventListener('change', generateTable);
+    
+      window.onload = function() {
+        updateTenants();
+      }
+
+      function refreshSel(){
+        updateTenants();
+        updateTimelines();
+      }
+
+      async function updateTenants(){
+        let tenant = tenant_sel.options[tenant_sel.selectedIndex].value;
+        const response = await fetch(url+"tenant/", {
+            method: "GET",
+            body: null,
+            headers: {'Content-Type': 'text/plain'},
+          });
+        const myText = await response.text();
+
+        let obj = JSON.parse(myText);
+
+        let len = tenant_sel.options.length;
+        for (let i = len; i > 0; i--){
+          tenant_sel.remove(i);
+        }
+        
+        for (let i = 0; i < obj.length; i++){
+          tenant_sel.options[i+1] = new Option(obj[i]["id"], i);
+        }
+
+        tenant_sel.value = tenant;
+      }
+
+      async function updateTimelines(){
+        let tenant = tenant_sel.options[tenant_sel.selectedIndex].value;
+        let timeline = timeline_sel.options[timeline_sel.selectedIndex].value;
+
+        let tenant_text = tenant_sel.options[tenant_sel.selectedIndex].text;
+        console.log(tenant_text)
+        const response = await fetch(url+"tenant/"+tenant_sel.options[tenant_sel.selectedIndex].text+"/timeline", {
+            method: "GET",
+            body: null,
+            headers: {'Content-Type': 'text/plain'},
+          });
+        const myText = await response.text();
+        console.log(myText)
+        let obj = JSON.parse(myText);
+
+        let len = timeline_sel.options.length;
+        for (let i = len; i > 0; i--){
+          timeline_sel.remove(i);
+        }
+
+        for (let i = 0; i < obj.length; i++){
+          timeline_sel.options[i+1] = new Option(obj[i]["timeline_id"], i);
+        }
+
+        timeline_sel.value = timeline;
+      }
+      
+      async function updateDatabases(){
+        let tenant = tenant_sel.options[tenant_sel.selectedIndex].value;
+        let timeline = timeline_sel.options[timeline_sel.selectedIndex].value;
+        let database = db_sel.options[db_sel.selectedIndex].value;
+        const response = await fetch(url+"tenant/"+tenant_sel.options[tenant_sel.selectedIndex].text+"/timeline/"+timeline_sel.options[timeline_sel.selectedIndex].text+"/databases", {
+            method: "GET",
+            body: null,
+            headers: {'Content-Type': 'text/plain'},
+          });
+        const myText = await response.text();
+        console.log(myText)
+        let obj = JSON.parse(myText);
+        
+        let len = db_sel.options.length;
+        for (let i = len; i > 0; i--){
+          db_sel.remove(i);
+        }
+
+        for (let i = 0; i < obj.length; i++){
+          db_sel.options[i+1] = new Option(obj[i]["name"], i);
+        }
+
+        db_sel.value = database;
+      }
+
+      async function updateTables(){
+        let tenant = tenant_sel.options[tenant_sel.selectedIndex].value;
+        let timeline = timeline_sel.options[timeline_sel.selectedIndex].value;
+        let database = db_sel.options[db_sel.selectedIndex].value;
+        let table = tbl_sel.options[tbl_sel.selectedIndex].value;
+        const response = await fetch(url+"tenant/"+tenant_sel.options[tenant_sel.selectedIndex].text+"/timeline/"+timeline_sel.options[timeline_sel.selectedIndex].text+"/databases/"+db_sel.options[db_sel.selectedIndex].text+"/table", {
+            method: "GET",
+            body: null,
+            headers: {'Content-Type': 'text/plain'},
+          });
+        const myText = await response.text();
+        console.log(myText)
+        let obj = JSON.parse(myText);
+
+        console.log(obj[0])
+        
+        let len = tbl_sel.options.length;
+        for (let i = len; i > 0; i--){
+          tbl_sel.remove(i);
+        }
+
+        for (let i = 0; i < obj.length; i++){
+          tbl_sel.options[i+1] = new Option(obj[i][0], i);
+        }
+
+        tbl_sel.value = table;
+        
+      }
+
+      async function generateTable(){
+        table_head.innerHTML = "";
+        table_body.innerHTML = "";
+
+        const response = await fetch(url+"tenant/"+tenant_sel.options[tenant_sel.selectedIndex].text+"/timeline/"+timeline_sel.options[timeline_sel.selectedIndex].text+"/databases/"+db_sel.options[db_sel.selectedIndex].text+"/table/"+tbl_sel.options[tbl_sel.selectedIndex].text, {
+            method: "GET",
+            body: null,
+            headers: {'Content-Type': 'text/plain'},
+          });
+        const myText = await response.text();
+        console.log(myText)
+        let obj = JSON.parse(myText);
+
+        let col_names = obj[0];
+
+        var headerRow = table_head.insertRow(0);
+        for(var i = 0; i < col_names.length; i++) {
+            headerRow.insertCell(i).innerHTML = col_names[i];
+        }
+
+        for (let i = 1; i < obj.length; i++){
+          let row = table_body.insertRow(-1);
+          for (let j =  0; j < obj[i].length ; j++){
+            row.insertCell(0).innerHTML = obj[i][obj[i].length - j - 1];
+          }
+        }
+      }
+      
+
+    </script>
+
+    <!--end::Script-->
+  </body><!--end::Body-->
+</html>

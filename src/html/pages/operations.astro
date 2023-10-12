@@ -1,0 +1,194 @@
+---
+import Head from "@components/_head.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/_sidenav.astro";
+import Scripts from "@components/_scripts.astro";
+
+const title = "HGNeon | Operations";
+const path = "../../../dist";
+const mainPage = "tables";
+const page = "simple";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <!--begin::App Wrapper-->
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <!--begin::App Main-->
+      <main class="app-main">
+        <!--begin::App Content Header-->
+        <div class="app-content-header">
+          <!--begin::Container-->
+          <div class="container-fluid">
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-sm-6">
+                <h3 class="mb-0">Operations</h3>
+              </div>
+              <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-end">
+                  <li class="breadcrumb-item"><a href="#">Home</a></li>
+                  <li class="breadcrumb-item active" aria-current="page">
+                    Operations
+                  </li>
+                </ol>
+              </div>
+            </div>
+            <!--end::Row-->
+          </div>
+          <!--end::Container-->
+        </div>
+        <!--end::App Content Header-->
+        <!--begin::App Content-->
+        <div class="app-content">
+          <!--begin::Container-->
+          <div class="container-fluid">
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-md-12">
+                <div class="card mb-4">
+                  <div class="card-header">
+
+                    <div class="row">
+                    <div class="col">
+                    <h3 class="card-title">Operations on Tenant</h3>
+                    </div>
+                    <div class="col">
+                    <select
+                    class="form-select"
+                    name="tenant-id" id="tenant-id">
+                    <option selected disabled value="">Select a Tenant...</option>
+                    </select>
+                    </div>
+                    <div class="col">
+                    <button type="button" class="btn btn-primary bi bi-arrow-clockwise" id="refresh-btn" style="margin:5px"
+                          > Refresh</button>
+                    </div>
+                  </div>     
+                  </div>
+                  <!-- /.card-header -->
+                  <div class="card-body p-0">
+                    <table class="table table-striped" style="table-layout:fixed;">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Action</th>
+                          <th>Tenant</th>
+                          <th>Timeline</th>
+                          <th>Endpoint</th>
+                          <th>Status</th>
+                          <th>Created</th>
+                          <th>Updated</th>
+                        </tr>
+                      </thead>
+                      <tbody id="table-body">
+                      </tbody>
+                    </table>
+                  </div>
+                  <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
+              </div>
+              <!-- /.col -->
+            </div>
+            <!--end::Row-->
+          </div>
+          <!--end::Container-->
+        </div>
+        <!--end::App Content-->
+      </main>
+      <!--end::App Main-->
+      <Footer />
+    </div>
+    <!--end::App Wrapper-->
+    <!--begin::Script-->
+    <Scripts path={path} />
+
+    <script>
+      const url = "http://192.168.49.2:30088/"
+
+      document.getElementById("refresh-btn").addEventListener("click", generateTable, false);
+
+      let tenant_sel = document.getElementById("tenant-id");
+      let table_body = document.getElementById("table-body");
+      
+      let tenant_list = [];
+
+      window.onload = function() {
+        generateTable();
+
+        tenant_sel.onchange = generateTable();
+      }
+
+      async function generateTable(){
+        let tenant = tenant_sel.options[tenant_sel.selectedIndex].text;
+        updateTenantSel();
+        
+        const response = await fetch(url+"tenant/"+tenant+"/operation/", {
+            method: "GET",
+            body: null,
+            headers: {'Content-Type': 'application/json'},
+          });
+        const myText = await response.text();
+        console.log(tenant)
+
+        let obj = JSON.parse(myText);
+
+        table_body.innerHTML = "";
+
+        for (let i = 0; i < obj.length; i++){
+          let row = table_body.insertRow(i);
+          row.classList.add('align-middle');
+
+          row.insertCell(0).innerHTML = obj[i]["id"]
+          row.insertCell(1).innerHTML = obj[i]["action"]
+          row.insertCell(2).innerHTML = obj[i]["tenant"]
+          row.insertCell(3).innerHTML = obj[i]["timeline"]
+          row.insertCell(4).innerHTML = obj[i]["endpoint"]
+          row.insertCell(5).innerHTML = obj[i]["status"]
+          row.insertCell(6).innerHTML = obj[i]["created"]
+          row.insertCell(7).innerHTML = obj[i]["updated"]
+
+          table_body.appendChild(row);
+        }
+                
+      }
+
+      async function updateTenantSel(){
+        let tenant = tenant_sel.options[tenant_sel.selectedIndex].value;
+
+        tenant_list = [];
+
+        const response = await fetch(url+"tenant/", {
+            method: "GET",
+            body: null,
+            headers: {'Content-Type': 'text/plain'},
+          });
+        const myText = await response.text();
+        let obj = JSON.parse(myText);
+
+        for (let i = 0; i < obj.length; i++){
+          tenant_list[i] = obj[i]["id"];
+          tenant_sel.options[i+1] = new Option(obj[i]["id"],i);
+        }
+
+        tenant_sel.value = tenant;
+
+        console.log(tenant_list);
+      }
+
+    </script>
+
+    <!--end::Script-->
+  </body><!--end::Body-->
+</html>
